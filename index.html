@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>تطبيق إدارة الأموال - مع التاريخ</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0b0b12;
+      --card: #151526;
+      --purple: #7b6cff;
+      --purple-dark: #4b3cff;
+      --text: #eaeaf0;
+      --muted: #a0a0c0;
+      --success: #00e0b8;
+      --danger: #ff5c7c;
+      --table-header: #1a1a2e;
+      --table-row-even: #10101d;
+      --table-row-odd: #0d0d15;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: 'Cairo', sans-serif;
+      background: radial-gradient(circle at top, #151526, #05050a 70%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px 0;
+    }
+
+    .app {
+      width: 95%;
+      max-width: 1400px;
+      padding: 30px;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 25px;
+      margin-bottom: 30px;
+    }
+
+    .card {
+      background: linear-gradient(180deg, #1a1a2e, #10101d);
+      border-radius: 20px;
+      padding: 25px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+      position: relative;
+      overflow: hidden;
+      z-index: 1;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(120deg, transparent, rgba(123,108,255,0.15), transparent);
+      opacity: 0;
+      transition: 0.5s;
+      pointer-events: none;
+    }
+
+    .card:hover::before { opacity: 1; }
+
+    .card h2 {
+      margin-top: 0;
+      margin-bottom: 20px;
+      font-size: 1.2rem;
+      color: var(--muted);
+    }
+
+    .total {
+      font-size: 2.2rem;
+      font-weight: 700;
+      margin-bottom: 20px;
+    }
+
+    .income .total { color: var(--success); }
+    .expense .total { color: var(--danger); }
+
+    input {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      padding: 12px 15px;
+      border-radius: 12px;
+      border: none;
+      outline: none;
+      background: #0f0f1f;
+      color: var(--text);
+      font-size: 1rem;
+      margin-bottom: 12px;
+      transition: 0.3s;
+    }
+
+    input::placeholder { color: #7777aa; }
+
+    input:focus {
+      box-shadow: 0 0 0 2px var(--purple);
+    }
+
+    button {
+      position: relative;
+      overflow: hidden;
+      width: 100%;
+      padding: 12px;
+      border-radius: 12px;
+      border: none;
+      background: linear-gradient(135deg, var(--purple), var(--purple-dark));
+      color: white;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    button.clicked {
+      transform: scale(0.95);
+      box-shadow: 0 0 15px rgba(123,108,255,0.6);
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(123,108,255,0.4);
+    }
+
+    .profit {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .circle {
+      width: 220px;
+      height: 220px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--purple);
+      background: radial-gradient(circle at center, #1a1a35, #0b0b15);
+      box-shadow:
+        0 0 20px rgba(123,108,255,0.4),
+        0 0 60px rgba(123,108,255,0.3),
+        inset 0 0 30px rgba(123,108,255,0.2);
+      animation: pulse 2.5s infinite ease-in-out;
+      margin-bottom: 20px;
+    }
+
+    @keyframes pulse {
+      0% {
+        box-shadow: 0 0 20px rgba(123,108,255,0.4), 0 0 60px rgba(123,108,255,0.3), inset 0 0 30px rgba(123,108,255,0.2);
+        transform: scale(1);
+      }
+      50% {
+        box-shadow: 0 0 35px rgba(123,108,255,0.8), 0 0 90px rgba(123,108,255,0.6), inset 0 0 40px rgba(123,108,255,0.3);
+        transform: scale(1.05);
+      }
+      100% {
+        box-shadow: 0 0 20px rgba(123,108,255,0.4), 0 0 60px rgba(123,108,255,0.3), inset 0 0 30px rgba(123,108,255,0.2);
+        transform: scale(1);
+      }
+    }
+
+    .reset {
+      margin-bottom: 30px;
+      background: linear-gradient(135deg, #ff5c7c, #ff2f5e);
+    }
+
+    /* جدول التاريخ */
+    .history-section {
+      margin-top: 40px;
+    }
+
+    .history-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding: 0 10px;
+    }
+
+    .history-title {
+      font-size: 1.4rem;
+      color: var(--purple);
+    }
+
+    .date-display {
+      font-size: 1.1rem;
+      color: var(--muted);
+      background: rgba(123,108,255,0.1);
+      padding: 8px 16px;
+      border-radius: 10px;
+    }
+
+    .history-table-container {
+      overflow-x: auto;
+      border-radius: 15px;
+      box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+    }
+
+    .history-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 700px;
+    }
+
+    .history-table thead {
+      background: linear-gradient(135deg, var(--table-header), #121225);
+    }
+
+    .history-table th {
+      padding: 18px 15px;
+      text-align: center;
+      font-weight: 700;
+      color: var(--purple);
+      border-bottom: 2px solid rgba(123,108,255,0.3);
+      font-size: 1rem;
+      letter-spacing: 0.5px;
+    }
+
+    .history-table tbody tr {
+      background-color: var(--table-row-even);
+      transition: all 0.3s ease;
+    }
+
+    .history-table tbody tr:nth-child(odd) {
+      background-color: var(--table-row-odd);
+    }
+
+    .history-table tbody tr:hover {
+      background-color: rgba(123,108,255,0.15);
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(123,108,255,0.2);
+    }
+
+    .history-table td {
+      padding: 16px 15px;
+      text-align: center;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      font-size: 1rem;
+    }
+
+    .date-cell {
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .today-row {
+      background: linear-gradient(135deg, rgba(123,108,255,0.15), rgba(0,224,184,0.05)) !important;
+      border-left: 4px solid var(--purple);
+    }
+
+    .today-row .date-cell {
+      color: var(--purple);
+      font-weight: 800;
+    }
+
+    .income-cell {
+      color: var(--success);
+      font-weight: 700;
+    }
+
+    .expense-cell {
+      color: var(--danger);
+      font-weight: 700;
+    }
+
+    .profit-cell {
+      color: var(--purple);
+      font-weight: 700;
+    }
+
+    .empty-row {
+      text-align: center;
+      padding: 30px;
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    /* تحسينات للشاشات الصغيرة */
+    @media (max-width: 1100px) {
+      .main-grid { grid-template-columns: repeat(2, 1fr); }
+      .profit { grid-column: span 2; }
+    }
+
+    @media (max-width: 768px) {
+      .main-grid { grid-template-columns: 1fr; }
+      .profit { grid-column: span 1; }
+      .history-header {
+        flex-direction: column;
+        gap: 15px;
+        align-items: flex-start;
+      }
+      .app {
+        padding: 15px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <h1>📊 تطبيق إدارة الأموال - مع التاريخ</h1>
+
+    <div class="main-grid">
+      <div class="card income">
+        <h2>الواردات</h2>
+        <div class="total" id="incomeTotal">0</div>
+        <input type="number" id="incomeInput" placeholder="أضف مبلغ وارد" />
+        <button onclick="addIncome()">إضافة</button>
+      </div>
+
+      <div class="card expense">
+        <h2>المنصرفات</h2>
+        <div class="total" id="expenseTotal">0</div>
+        <input type="number" id="expenseInput" placeholder="أضف مبلغ منفق" />
+        <button onclick="addExpense()">إضافة</button>
+      </div>
+
+      <div class="card profit">
+        <h2>الأرباح (25%)</h2>
+        <div class="circle" id="profitCircle">0</div>
+      </div>
+    </div>
+
+    <button class="reset" onclick="resetAll()">تصفير جميع القيم</button>
+
+    <!-- قسم التاريخ والجدول -->
+    <div class="history-section">
+      <div class="history-header">
+        <div class="history-title">📅 السجل الزمني للمعاملات</div>
+        <div class="date-display" id="currentDateDisplay"></div>
+      </div>
+
+      <div class="history-table-container">
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>التاريخ</th>
+              <th>الواردات اليومية</th>
+              <th>المنصرفات اليومية</th>
+              <th>الأرباح اليومية (25%)</th>
+              <th>الواردات التراكمية</th>
+              <th>المنصرفات التراكمية</th>
+            </tr>
+          </thead>
+          <tbody id="historyTableBody">
+            <!-- سيتم ملئه بواسطة الجافاسكريبت -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ======================
+    // الحالة والتخزين المحلي
+    // ======================
+    let transactions = JSON.parse(localStorage.getItem('transactions')) || {};
+    let currentDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+
+    // الحصول على التاريخ الحالي بتنسيق عربي
+    function getCurrentDateFormatted() {
+      const now = new Date();
+      return now.toLocaleDateString('ar-SA', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    }
+
+    // تحديث عرض التاريخ الحالي
+    function updateDateDisplay() {
+      document.getElementById('currentDateDisplay').textContent = getCurrentDateFormatted();
+    }
+
+    // التأكد من وجود تاريخ اليوم في السجلات
+    function ensureDateExists() {
+      if (!transactions[currentDate]) {
+        transactions[currentDate] = {
+          income: 0,
+          expense: 0,
+          cumulativeIncome: getCumulativeIncome(),
+          cumulativeExpense: getCumulativeExpense()
+        };
+        saveTransactions();
+      }
+    }
+
+    // حساب الواردات التراكمية
+    function getCumulativeIncome() {
+      let total = 0;
+      for (const date in transactions) {
+        total += transactions[date].income || 0;
+      }
+      return total;
+    }
+
+    // حساب المنصرفات التراكمية
+    function getCumulativeExpense() {
+      let total = 0;
+      for (const date in transactions) {
+        total += transactions[date].expense || 0;
+      }
+      return total;
+    }
+
+    // حفظ السجلات في localStorage
+    function saveTransactions() {
+      localStorage.setItem('transactions', JSON.stringify(transactions));
+    }
+
+    // ======================
+    // تحديث واجهة المستخدم
+    // ======================
+    function updateUI() {
+      // تحديث القيم الإجمالية
+      const totalIncome = getCumulativeIncome();
+      const totalExpense = getCumulativeExpense();
+      
+      document.getElementById('incomeTotal').textContent = totalIncome.toFixed(2);
+      document.getElementById('expenseTotal').textContent = totalExpense.toFixed(2);
+      
+      const profit = totalIncome * 0.25;
+      document.getElementById('profitCircle').textContent = profit.toFixed(2);
+      
+      // تحديث الجدول
+      updateHistoryTable();
+      
+      saveTransactions();
+    }
+
+    // ======================
+    // تحديث جدول التاريخ
+    // ======================
+    function updateHistoryTable() {
+      const tableBody = document.getElementById('historyTableBody');
+      const dates = Object.keys(transactions).sort().reverse(); // أحدث التواريخ أولاً
+      
+      // إذا لم توجد بيانات
+      if (dates.length === 0) {
+        tableBody.innerHTML = `
+          <tr>
+            <td colspan="6" class="empty-row">لا توجد معاملات مسجلة بعد. قم بإضافة واردات أو منصرفات لتبدأ.</td>
+          </tr>
+        `;
+        return;
+      }
+      
+      let tableHTML = '';
+      let cumulativeIncome = 0;
+      let cumulativeExpense = 0;
+      
+      // نمر على التواريخ بالترتيب العكسي لعرض الأحدث أولاً
+      const sortedDates = [...dates].sort().reverse();
+      
+      sortedDates.forEach(date => {
+        const dayData = transactions[date];
+        cumulativeIncome += dayData.income || 0;
+        cumulativeExpense += dayData.expense || 0;
+        
+        const dayProfit = (dayData.income || 0) * 0.25;
+        const dayCumulativeIncome = cumulativeIncome;
+        const dayCumulativeExpense = cumulativeExpense;
+        
+        // تنسيق التاريخ
+        const dateObj = new Date(date);
+        const formattedDate = dateObj.toLocaleDateString('ar-SA', {
+          weekday: 'short',
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        });
+        
+        // تحديد إذا كان هذا اليوم هو اليوم الحالي
+        const isToday = date === currentDate;
+        const rowClass = isToday ? 'today-row' : '';
+        
+        tableHTML += `
+          <tr class="${rowClass}">
+            <td class="date-cell">${formattedDate}</td>
+            <td class="income-cell">${(dayData.income || 0).toFixed(2)}</td>
+            <td class="expense-cell">${(dayData.expense || 0).toFixed(2)}</td>
+            <td class="profit-cell">${dayProfit.toFixed(2)}</td>
+            <td class="income-cell">${dayCumulativeIncome.toFixed(2)}</td>
+            <td class="expense-cell">${dayCumulativeExpense.toFixed(2)}</td>
+          </tr>
+        `;
+      });
+      
+      tableBody.innerHTML = tableHTML;
+    }
+
+    // ======================
+    // رسوم زر الحركة
+    // ======================
+    function animateButton(btn) {
+      if (!btn) return;
+      btn.classList.add('clicked');
+      setTimeout(() => btn.classList.remove('clicked'), 180);
+    }
+
+    // ======================
+    // الإجراءات
+    // ======================
+    function addIncome() {
+      const input = document.getElementById('incomeInput');
+      const value = parseFloat(input.value);
+      const btn = document.querySelector('.income button');
+
+      if (!isNaN(value) && value > 0) {
+        ensureDateExists();
+        transactions[currentDate].income += value;
+        input.value = '';
+        animateButton(btn);
+        updateUI();
+      } else {
+        alert('يرجى إدخال قيمة صحيحة للواردات');
+      }
+    }
+
+    function addExpense() {
+      const input = document.getElementById('expenseInput');
+      const value = parseFloat(input.value);
+      const btn = document.querySelector('.expense button');
+
+      if (!isNaN(value) && value > 0) {
+        ensureDateExists();
+        transactions[currentDate].expense += value;
+        input.value = '';
+        animateButton(btn);
+        updateUI();
+      } else {
+        alert('يرجى إدخال قيمة صحيحة للمنصرفات');
+      }
+    }
+
+    function resetAll() {
+      const confirmReset = confirm('هل أنت متأكد من تصفير جميع القيم؟ سيتم حذف جميع السجلات التاريخية.');
+      if (confirmReset) {
+        transactions = {};
+        localStorage.removeItem('transactions');
+        ensureDateExists();
+        updateUI();
+      }
+    }
+
+    // التحقق من تغيير اليوم تلقائياً
+    function checkForNewDay() {
+      const today = new Date().toISOString().split('T')[0];
+      if (today !== currentDate) {
+        currentDate = today;
+        ensureDateExists();
+        updateUI();
+        updateDateDisplay();
+      }
+    }
+
+    // ======================
+    // التهيئة
+    // ======================
+    document.addEventListener('DOMContentLoaded', function() {
+      ensureDateExists();
+      updateUI();
+      updateDateDisplay();
+      
+      // التحقق من تغيير اليوم كل دقيقة
+      setInterval(checkForNewDay, 60000);
+      
+      // السماح بإضافة المبالغ باستخدام زر Enter
+      document.getElementById('incomeInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') addIncome();
+      });
+      
+      document.getElementById('expenseInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') addExpense();
+      });
+    });
+  </script>
+</body>
+</html>
